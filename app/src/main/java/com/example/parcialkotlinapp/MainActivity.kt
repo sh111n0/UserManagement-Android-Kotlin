@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -14,92 +15,89 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         enableEdgeToEdge()
-
         setContentView(R.layout.activity_main)
 
-        val tvSaludo =findViewById<TextView>(R.id.tvSaludo)
-
-        // Nombre recibido desde LoginActivity
-        val  nombreUsuario = intent.getStringExtra(
-            "nombreUsuario"
-        ) ?: "Usuario"
-
-        //Hora Actual del dispositivo
-        val horaActual =
-            Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-
-        //Determinar saludo
-        var saludo = when(horaActual){
-
-            in 5..11 ->
-                "Buenos días"
-
-            in 12..17 ->
-                "Buenas tardes"
-
-            else ->
-                "Buenas noches"
-        }
-
-        //Mostrar saludo personalizado
-
-        tvSaludo.text = "$saludo, $nombreUsuario"
-
-        // Manejo de los bordes de la pantalla
         ViewCompat.setOnApplyWindowInsetsListener(
             findViewById(R.id.main)
-        ) { v, insets ->
-
-            val systemBars =
+        ) { vista, insets ->
+            val bordesSistema =
                 insets.getInsets(
                     WindowInsetsCompat.Type.systemBars()
                 )
 
-            v.setPadding(
-                systemBars.left,
-                systemBars.top,
-                systemBars.right,
-                systemBars.bottom
+            vista.setPadding(
+                bordesSistema.left,
+                bordesSistema.top,
+                bordesSistema.right,
+                bordesSistema.bottom
             )
 
             insets
         }
 
-        // =====================================
-        // BOTÓN EJERCICIO PAR O IMPAR
-        // =====================================
+        val tvSaludo =
+            findViewById<TextView>(R.id.tvSaludo)
+
+        val btnCerrarSesion =
+            findViewById<Button>(R.id.btnCerrarSesion)
 
         val btnParImpar =
             findViewById<Button>(R.id.btnParImpar)
 
+        val nombreUsuario =
+            intent.getStringExtra("nombreUsuario")
+                .orEmpty()
+                .ifBlank { "estudiante" }
+
+        tvSaludo.text =
+            "${obtenerSaludo()}, $nombreUsuario"
+
         btnParImpar.setOnClickListener {
-
-            val intent = Intent(
-                this,
-                ParImparActivity::class.java
+            startActivity(
+                Intent(
+                    this,
+                    ParImparActivity::class.java
+                )
             )
-
-            startActivity(intent)
         }
 
-        // =====================================
-        // VOLVER AL LOGIN
-        // =====================================
-
-        val btnVolver2 =
-            findViewById<Button>(R.id.btnVolver2)
-
-        btnVolver2.setOnClickListener {
-
-            val intent = Intent(
-                this,
-                LoginActivity::class.java
-            )
-
-            startActivity(intent)
+        btnCerrarSesion.setOnClickListener {
+            mostrarConfirmacionSalida()
         }
+    }
 
+    private fun obtenerSaludo(): String {
+        return when (
+            Calendar.getInstance()
+                .get(Calendar.HOUR_OF_DAY)
+        ) {
+            in 5..11 -> "Buenos días"
+            in 12..17 -> "Buenas tardes"
+            else -> "Buenas noches"
+        }
+    }
+
+    private fun mostrarConfirmacionSalida() {
+        AlertDialog.Builder(this)
+            .setTitle("Cerrar sesión")
+            .setMessage(
+                "¿Está seguro de que desea cerrar sesión?"
+            )
+            .setNegativeButton("CANCELAR", null)
+            .setPositiveButton("SALIR") { _, _ ->
+                val intent = Intent(
+                    this,
+                    LoginActivity::class.java
+                ).apply {
+                    flags =
+                        Intent.FLAG_ACTIVITY_NEW_TASK or
+                            Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+
+                startActivity(intent)
+                finish()
+            }
+            .show()
     }
 }
